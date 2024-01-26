@@ -44,7 +44,7 @@ def update_image(file_path):
     ORIGINAL_HEIGHT = photo.size[1]
     ORIGINAL_WIDTH = photo.size[0]
     print(photo.size[1], photo.size[0])
-    photo.thumbnail(size=(800, 600))
+    photo.thumbnail(size=(800, 500))
     new_image = ImageTk.PhotoImage(photo)
     image_square.config(image=new_image)
     image_square.image = new_image
@@ -55,7 +55,6 @@ def update_image(file_path):
     IMAGE = photo  # Save the PhotoImage for later use
 
 
-# Function to get a list of available TTF fonts
 def get_ttf_fonts():
     """ Get a list of available TTF fonts """
     ttf_fonts = fm.findSystemFonts(fontpaths=None, fontext='ttf')
@@ -67,8 +66,7 @@ def get_ttf_fonts():
     return fonts_list
 
 
-# Callback function for font selection
-def get_selected_font():
+def get_selected_font(*args):
     """ Callback function for font selection """
     global FONT
     FONT = font_combobox.get()
@@ -82,7 +80,6 @@ def hex_to_rgba(hex_color):
     return tuple(int(hex_color[i:i + 2], 16) for i in (0, 2, 4))
 
 
-# Function to choose color
 def choose_color():
     """ Choose a color """
     global COLOR
@@ -99,7 +96,6 @@ def choose_color():
     apply_watermark()
 
 
-# Validation function for size input
 def validate_size_input(value, action):
     """ Validate size input """
     if action == '1':
@@ -114,7 +110,6 @@ def validate_size_input(value, action):
     return True
 
 
-# Function to update watermark size
 def update_watermark_size(value):
     """ Update watermark size.  """
     try:
@@ -129,7 +124,6 @@ def update_watermark_size(value):
     apply_watermark()
 
 
-# Function to update opacity
 def update_opacity():
     """ Update opacity. """
     global OPACITY
@@ -137,7 +131,6 @@ def update_opacity():
     apply_watermark()
 
 
-# Function to rotate clockwise
 def clockwise_rotation():
     """ Rotate clockwise. """
     global ROTATION
@@ -145,111 +138,139 @@ def clockwise_rotation():
     apply_watermark()
 
 
-# Function to rotate anticlockwise
 def anticlockwise_rotation():
-    """ Rotate anti-clockwise. """
+    """ Rotate anti-clockwise. Returns the result to the apply_watermark function. """
     global ROTATION
     ROTATION += 20
     apply_watermark()
 
 
-# Function to move text up
 def move_up():
-    """ Move text up. """
-    global HEIGHT, FULL_HEIGHT
-    if HEIGHT < FULL_HEIGHT:
-        HEIGHT = max(0, HEIGHT - 10)
-    apply_watermark()
+    """Move the watermark text up."""
+    global HEIGHT, FULL_HEIGHT, IMAGE
+    move_watermark(-10, 0)
 
 
 # Function to move text down
 def move_down():
-    """ Move text down. """
-    global HEIGHT, FULL_HEIGHT
-    if HEIGHT < FULL_HEIGHT:
-        HEIGHT = max(0, HEIGHT + 10)
-    apply_watermark()
+    """Move the watermark text down."""
+    global HEIGHT, FULL_HEIGHT, IMAGE
+    move_watermark(10, 0)
 
 
 # Function to move text left
 def move_left():
-    """ Move text left. """
-    global WIDTH, FULL_WIDTH
-    if WIDTH < FULL_WIDTH:
-        WIDTH = min(FULL_WIDTH, WIDTH - 10)
-        apply_watermark()
+    """Move the watermark text left."""
+    global WIDTH, FULL_WIDTH, IMAGE
+    move_watermark(0, -10)
 
 
 # Function to move text right
 def move_right():
-    """ Move text right. """
-    global WIDTH, FULL_WIDTH
-    if WIDTH < FULL_WIDTH:
-        WIDTH = min(FULL_WIDTH, WIDTH + 10)
-        apply_watermark()
+    """Move the watermark text right."""
+    global WIDTH, FULL_WIDTH, IMAGE
+    move_watermark(0, 10)
 
 
-# Function to apply watermark on the image
-def apply_watermark():
-    """ Apply watermark on the image. """
-    global FILE_PATH, IMAGE, IMAGE_COPY, FONT_SIZE, HEIGHT, WIDTH, ROTATION, COLOR, OPACITY, FONT, FULL_HEIGHT, \
-        FULL_WIDTH
+def move_watermark(vertical_shift, horizontal_shift):
+    """ Shift the watermark position and apply the updated watermark.
+    Args:
+        vertical_shift (int): Vertical shift value.
+        horizontal_shift (int): Horizontal shift value."""
+    global HEIGHT, WIDTH, IMAGE
+
+    # Shift watermark position
+    HEIGHT = max(0, min(FULL_HEIGHT, HEIGHT + vertical_shift))
+    WIDTH = max(0, min(FULL_WIDTH, WIDTH + horizontal_shift))
+
+    apply_watermark()
+
+
+def open_and_prepare_image(file_path):
+    """Open and prepare image for applying watermark.
+    Args:
+        file_path (str): Path to the image file.
+    Returns:
+        Image: Prepared original image in RGBA mode.
+            Returns None if an error occurs."""
     try:
-        with Image.open(FILE_PATH).convert("RGBA") as original_image:
+        with Image.open(file_path).convert("RGBA") as original_image:
             original_image.thumbnail(size=(800, 600))
-            watermark_field = Image.new("RGBA", original_image.size, (255, 255, 255, 0))
-            # Set text position
-            text_position = (WIDTH, HEIGHT)
-
-            # Declare text color
-            opacity_tuple = (int(255 * OPACITY),)
-            watermark_fill = COLOR + opacity_tuple
-
-            # Draw text in the watermark field
-            draw = ImageDraw.Draw(watermark_field)
-            font = ImageFont.truetype(FONT, FONT_SIZE)
-
-            # Get text size
-            text_bbox = draw.textbbox((text_position[0], text_position[1]), f"{watermark_input.get()}", font=font)
-            text_width = text_bbox[2] - text_bbox[0]
-            text_height = text_bbox[3] - text_bbox[1]
-
-            text_position = (text_position[0] - text_width // 2, text_position[1] - text_height // 2)
-            draw.text(text_position, f"{watermark_input.get()}", fill=watermark_fill, font=font)
-
-            watermark_rotation = watermark_field.rotate(ROTATION, expand=False)  # Expand the image to fit rotations
-
-            # Adjust image size to fit in the window
-            new_width = min(original_image.width, watermark_rotation.width)
-            new_height = min(original_image.height, watermark_rotation.height)
-
-            # Create new watermark and image fields to adjust their sizes
-            resized_watermark = Image.new("RGBA", (new_width, new_height), (255, 255, 255, 0))
-            resized_watermark.paste(watermark_rotation, (0, 0), watermark_rotation)
-            resized_original = Image.new("RGBA", (new_width, new_height), (255, 255, 255, 0))
-            resized_original.paste(original_image, (0, 0), original_image)
-
-            watermark_output = Image.alpha_composite(resized_original, resized_watermark)
-
-            watermark_output_rgba = watermark_output.convert("RGBA")
-
-            photo_image = ImageTk.PhotoImage(watermark_output_rgba)
-
-            image_square.configure(image=photo_image)
-            image_square.image = photo_image
-
-            IMAGE = watermark_output_rgba
-            # Create a copy of the watermarked image with original height and width for saving image
-            IMAGE_COPY = watermark_output_rgba.copy()
-            IMAGE_COPY = IMAGE_COPY.resize((ORIGINAL_WIDTH, ORIGINAL_HEIGHT), Image.LANCZOS)
-
+            return original_image
     except FileNotFoundError:
         tkinter.messagebox.showerror("Error", "File not found.")
     except PIL.UnidentifiedImageError:
         tkinter.messagebox.showerror("Error", "Invalid file extension.")
     except Exception as e:
         tkinter.messagebox.showerror("Error", f"{e}.")
-        pass
+        return None
+
+
+def create_watermark_text(original_image):
+    """Create a watermark field and draw text into it.
+    Args:
+        original_image (Image): Original image in RGBA mode.
+    Returns:
+        Image: Watermark field with drawn text."""
+    watermark_field = Image.new("RGBA", original_image.size, (255, 255, 255, 0))
+    text_position = (WIDTH, HEIGHT)
+    opacity_tuple = (int(255 * OPACITY),)
+    watermark_fill = COLOR + opacity_tuple
+    draw = ImageDraw.Draw(watermark_field)
+    font = ImageFont.truetype(FONT, FONT_SIZE)
+    text_bbox = draw.textbbox((text_position[0], text_position[1]), f"{watermark_input.get()}", font=font)
+    text_width = text_bbox[2] - text_bbox[0]
+    text_height = text_bbox[3] - text_bbox[1]
+    text_position = (text_position[0] - text_width // 2, text_position[1] - text_height // 2)
+    draw.text(text_position, f"{watermark_input.get()}", fill=watermark_fill, font=font)
+    return watermark_field
+
+
+def resize_and_composite_images(original_image, watermark_field):
+    """Resize and composite the original image and watermark field.
+    Args:
+        original_image (Image): Original image in RGBA mode.
+        watermark_field (Image): Watermark field with drawn text.
+    Returns:
+        Tuple[Image, Image]: Tuple containing resized original image and watermark."""
+    watermark_rotation = watermark_field.rotate(ROTATION, expand=False)
+    new_width = min(original_image.width, watermark_rotation.width)
+    new_height = min(original_image.height, watermark_rotation.height)
+    resized_watermark = Image.new("RGBA", (new_width, new_height), (255, 255, 255, 0))
+    resized_watermark.paste(watermark_rotation, (0, 0), watermark_rotation)
+    resized_original = Image.new("RGBA", (new_width, new_height), (255, 255, 255, 0))
+    resized_original.paste(original_image, (0, 0), original_image)
+    return resized_original, resized_watermark
+
+
+def apply_watermark():
+    """Apply watermark on the image and update the display."""
+    global FILE_PATH, IMAGE, IMAGE_COPY, FONT_SIZE, HEIGHT, WIDTH, ROTATION, COLOR, OPACITY, FONT, FULL_HEIGHT, FULL_WIDTH
+    original_image = open_and_prepare_image(FILE_PATH)
+
+    if original_image:
+        watermark_field = create_watermark_text(original_image)
+        resized_original, resized_watermark = resize_and_composite_images(original_image, watermark_field)
+
+        watermark_output = Image.alpha_composite(resized_original, resized_watermark)
+        watermark_output_rgba = watermark_output.convert("RGBA")
+
+        update_image_display(watermark_output_rgba)
+
+        IMAGE = watermark_output_rgba
+        IMAGE_COPY = watermark_output_rgba.copy()
+        IMAGE_COPY = IMAGE_COPY.resize((ORIGINAL_WIDTH, ORIGINAL_HEIGHT), Image.LANCZOS)
+
+
+def update_image_display(photo_image):
+    """
+    Update the displayed image with the given PhotoImage.
+    Args:
+        photo_image (ImageTk.PhotoImage): PhotoImage to be displayed.
+    """
+    photo_image = ImageTk.PhotoImage(photo_image)
+    image_square.configure(image=photo_image)
+    image_square.image = photo_image
 
 
 def save_image():
@@ -277,13 +298,13 @@ def save_image():
 # Create themed Tkinter window
 window = ThemedTk(theme="equilux")
 window.title("Image Watermark App")
-window.minsize(height=800, width=1100)
-window.config(padx=50, pady=50, bg=BACKGROUND_COLOR)
+window.minsize(height=700, width=1000)
+window.config(padx=50, pady=80, bg=BACKGROUND_COLOR)
 
 # ---------------------------------IMAGE SQUARE----------------------------------#
 
 # Create an empty image for the initial display
-empty_image = Image.new("RGBA", (800, 600), color=BACKGROUND_COLOR)
+empty_image = Image.new("RGBA", (700, 500), color=BACKGROUND_COLOR)
 image = ImageTk.PhotoImage(empty_image)
 image_square = ttk.Label(window, image=image, borderwidth=3)
 image_square.image = image  # keep a reference
