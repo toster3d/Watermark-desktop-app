@@ -538,6 +538,7 @@ def reset_settings():
     OPACITY = 1.0
     FONT = "tahoma"
     WATERMARK_TYPE = "Text"
+    set_watermark_type(WATERMARK_TYPE)
 
     # Reset logo dimensions and file path
     LOGO_WIDTH = 100
