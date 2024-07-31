@@ -57,7 +57,7 @@ If you want to reset the watermark settings:
 ## Installation
 1. Clone the repository:
 ```bash 
-git clone https://github.com/your-username/Image-Watermark-Desktop-App.git
+git clone https://github.com/toster3d/Watermark-desktop-app.git
 ```
 ```bash
 cd Image-Watermark-Desktop-App
